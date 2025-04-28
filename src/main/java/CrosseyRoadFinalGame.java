@@ -9,7 +9,6 @@ import javax.sound.sampled.*;
 import java.io.File;
 import java.io.IOException;
 import java.awt.image.BufferedImage;
-//hi it's Liya
 
 public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private static final int WIDTH = 800;

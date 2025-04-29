@@ -34,8 +34,11 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private Random rand = new Random();
 
     private List<Rectangle> obstacles = new ArrayList<>();
+    //This is an array which holds all 3 of the cat sprite images
     private BufferedImage[] catImages = new BufferedImage[3];
+    //This is a Clip array for all 3 of the meowing sounds for each cat
     private Clip[] meowingClips = new Clip[3];
+    //Shows the descriptions of each cat
     private final String[] catDescriptions = {
             "Yoda: long haired with yellow and green eyes",
             "Alpha: husky, meaty and dominant",
@@ -53,8 +56,9 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         setSize(WIDTH, HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
-
+        //the images of cats pop up
         loadCatImages();
+        //the meowing sounds of cats pop up
         loadMeowingSounds();
 
         gamePanel = new JPanel() {
@@ -77,6 +81,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         healthLabel.setBounds(10, 40, 100, 20);
         gamePanel.add(healthLabel);
 
+        //Shows you where the description for each cat is and it's color
         catDescriptionLabel = new JLabel("Choose your cat! Press UP key");
         catDescriptionLabel.setForeground(Color.BLACK);
         catDescriptionLabel.setBounds(10, 70, 400, 20);
@@ -90,6 +95,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
 
     private void loadCatImages() {
         try {
+            //Each specific cat image is brought in
             catImages[0] = ImageIO.read(new File("cat1.png"));
             catImages[1] = ImageIO.read(new File("cat2.png"));
             catImages[2] = ImageIO.read(new File("cat3.png"));
@@ -97,7 +103,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             e.printStackTrace();
         }
     }
-
+    //The method for all three cats meowing sounds to be brought in
     private void loadMeowingSounds() {
         try {
             String[] meowFiles = {"Yoda.wav", "Alpha.wav", "Explorer.wav"};
@@ -120,7 +126,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             drawNeighborhoodLevel(g);
         }
 
-        // Draw player
+        // Draw players which is the 3 cats 
         if (catImages[selectedCat] != null) {
             g.drawImage(catImages[selectedCat], playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT, null);
         } else {
@@ -275,13 +281,15 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
                 } catch (InterruptedException ignored) {}
             }).start();
         }
+        //When you hit the UP key, you can choose a cat
         if (key == KeyEvent.VK_UP) {
             selectedCat = (selectedCat + 1) % 3;
             catDescriptionLabel.setText(catDescriptions[selectedCat]);
+            //Each time you hit the UP key, you also hear the different meows of each chosen
             playMeowingSound(selectedCat);
         }
     }
-
+    //The meowing sound method to play for the cats
     private void playMeowingSound(int catIndex) {
         if (meowingClips[catIndex] != null) {
             meowingClips[catIndex].setFramePosition(0);

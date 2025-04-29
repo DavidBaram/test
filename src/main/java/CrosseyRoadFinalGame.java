@@ -1,3 +1,13 @@
+/**
+ * Project: Group project Team 1 - Crossey Road Game
+ * Purpose Details: Using what we learned in IST 242 to create and build a Crossey Road Game that works
+ * Course: IST 242: Intermediate & Object-Oriented Application Development
+ * Author: David Michael Baram, Liya Aji, Yusuf I Baksh, Ulrich Kevin Commodore-Armah, Jerry Peter Alexander
+ * Date Developed: 04/28/25
+ * Last Date Changed: 05//25
+ * Revision: 1
+
+ */
 // Import necessary libraries for GUI, event handling, multimedia, and file operations
 import javax.swing.*;
 import java.awt.*;

@@ -19,7 +19,6 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private static final int OBSTACLE_HEIGHT = 30;
     private static final int PLAYER_SPEED = 10;
     private static final int PROJECTILE_SPEED = 10;
-    private static final int OBSTACLE_SPEED = 4;
 
     private int level = 1;
     private int health = 3;
@@ -34,11 +33,8 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private Random rand = new Random();
 
     private List<Rectangle> obstacles = new ArrayList<>();
-    //This is an array which holds all 3 of the cat sprite images
     private BufferedImage[] catImages = new BufferedImage[3];
-    //This is a Clip array for all 3 of the meowing sounds for each cat
     private Clip[] meowingClips = new Clip[3];
-    //Shows the descriptions of each cat
     private final String[] catDescriptions = {
             "Yoda: long haired with yellow and green eyes",
             "Alpha: husky, meaty and dominant",
@@ -52,13 +48,12 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private Timer timer;
 
     public CrosseyRoadFinalGame() {
-        setTitle("Crossey Roads - Combined Game");
+        setTitle("Crossey Roads - Final Game");
         setSize(WIDTH, HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
-        //the images of cats pop up
+
         loadCatImages();
-        //the meowing sounds of cats pop up
         loadMeowingSounds();
 
         gamePanel = new JPanel() {
@@ -81,7 +76,6 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         healthLabel.setBounds(10, 40, 100, 20);
         gamePanel.add(healthLabel);
 
-        //Shows you where the description for each cat is and it's color
         catDescriptionLabel = new JLabel("Choose your cat! Press UP key");
         catDescriptionLabel.setForeground(Color.BLACK);
         catDescriptionLabel.setBounds(10, 70, 400, 20);
@@ -95,7 +89,6 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
 
     private void loadCatImages() {
         try {
-            //Each specific cat image is brought in
             catImages[0] = ImageIO.read(new File("cat1.png"));
             catImages[1] = ImageIO.read(new File("cat2.png"));
             catImages[2] = ImageIO.read(new File("cat3.png"));
@@ -103,7 +96,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             e.printStackTrace();
         }
     }
-    //The method for all three cats meowing sounds to be brought in
+
     private void loadMeowingSounds() {
         try {
             String[] meowFiles = {"Yoda.wav", "Alpha.wav", "Explorer.wav"};
@@ -126,7 +119,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             drawNeighborhoodLevel(g);
         }
 
-        // Draw players which is the 3 cats 
+        // Draw player
         if (catImages[selectedCat] != null) {
             g.drawImage(catImages[selectedCat], playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT, null);
         } else {
@@ -191,7 +184,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     }
 
     private void moveObstacles() {
-        int speed = (level == 2) ? 8 : 4;
+        int speed = (level == 2) ? 6 : 4;
 
         for (Rectangle obstacle : obstacles) {
             obstacle.x += speed;
@@ -212,9 +205,21 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
 
     private void createObstacles() {
         obstacles.clear();
-        int count = (level == 2) ? 5 : 15;
-        for (int i = 0; i < count; i++) {
-            obstacles.add(new Rectangle(rand.nextInt(WIDTH), 150 + i * 50, OBSTACLE_WIDTH, OBSTACLE_HEIGHT));
+        if (level == 2) {
+            // Train level - spawn obstacles (trains) only on tracks
+            int[] trackYPositions = {150, 210, 270, 330, 390, 450, 510};
+            for (int i = 0; i < 5; i++) {
+                int y = trackYPositions[rand.nextInt(trackYPositions.length)];
+                int x = -rand.nextInt(WIDTH);
+                obstacles.add(new Rectangle(x, y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT));
+            }
+        } else {
+            // Road or neighborhood
+            for (int i = 0; i < 15; i++) {
+                int x = rand.nextInt(WIDTH);
+                int y = 150 + rand.nextInt(300);
+                obstacles.add(new Rectangle(x, y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT));
+            }
         }
     }
 
@@ -281,15 +286,13 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
                 } catch (InterruptedException ignored) {}
             }).start();
         }
-        //When you hit the UP key, you can choose a cat
         if (key == KeyEvent.VK_UP) {
             selectedCat = (selectedCat + 1) % 3;
             catDescriptionLabel.setText(catDescriptions[selectedCat]);
-            //Each time you hit the UP key, you also hear the different meows of each chosen
             playMeowingSound(selectedCat);
         }
     }
-    //The meowing sound method to play for the cats
+
     private void playMeowingSound(int catIndex) {
         if (meowingClips[catIndex] != null) {
             meowingClips[catIndex].setFramePosition(0);
@@ -298,10 +301,10 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     }
 
     @Override
-    public void keyReleased(KeyEvent e) { }
+    public void keyReleased(KeyEvent e) {}
 
     @Override
-    public void keyTyped(KeyEvent e) { }
+    public void keyTyped(KeyEvent e) {}
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new CrosseyRoadFinalGame().setVisible(true));

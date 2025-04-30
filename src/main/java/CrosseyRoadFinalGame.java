@@ -58,7 +58,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private BufferedImage[] catImages = new BufferedImage[3];  // Array to hold cat images
     private Clip[] meowingClips = new Clip[3];  // Array to hold meowing sound clips
 
-     // Shield variables for activating, starting and the duration of shield
+    // Shield variables for activating, starting and the duration of shield
     private boolean shieldActive = false;
     private int shieldDuration = 5000; // Shield lasts for 5 seconds
     private long shieldStartTime;
@@ -75,6 +75,9 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private JLabel scoreLabel;  // Score label
     private JLabel healthLabel;  // Health label
     private JLabel catDescriptionLabel;  // Label to show selected cat's description
+    private JLabel timerLabel;  // Timer label to show countdown
+    private int remainingTime = 60;  // 60-second countdown
+    private Timer countdownTimer;  // Timer for countdown
 
     // Timer for game loop
     private Timer timer;  // Timer to control the game loop and timing of movements
@@ -118,12 +121,19 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         catDescriptionLabel.setForeground(Color.BLACK);
         catDescriptionLabel.setBounds(10, 70, 400, 20);  // Position cat description label
         gamePanel.add(catDescriptionLabel);
+        timerLabel = new JLabel("Time: 60");
+        timerLabel.setForeground(Color.BLACK);
+        timerLabel.setBounds(10, 100, 100, 20);  // Position timer label
+        gamePanel.add(timerLabel);
+
 
         // Enable keyboard input
         gamePanel.setFocusable(true);
         gamePanel.addKeyListener(this);
 
         startObstacleMovement(); // Begin game loop and spawn initial obstacles
+        // Still inside the constructor, at the end, after startObstacleMovement();
+        startCountdownTimer();   // Begin countdown timer
     }
 
     /**
@@ -139,6 +149,25 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * Load timer to countdown
+     */
+    private void startCountdownTimer() {
+        countdownTimer = new Timer(1000, e -> {
+            if (!isGameOver) {
+                remainingTime--;
+                timerLabel.setText("Time: " + remainingTime);
+                if (remainingTime <= 0) {
+                    isGameOver = true;
+                    timer.stop();
+                    countdownTimer.stop();
+                    gamePanel.repaint();
+                    JOptionPane.showMessageDialog(this, "Time's up!");
+                }
+            }
+        });
+        countdownTimer.start();
+    }
     /**
      * Load sound clips for each cat's meow.
      */
@@ -250,7 +279,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         timer.start();  // Start the game loop
         createObstacles();  // Create initial obstacles
     }
-    
+
     /**
      * Moves obstacles across the screen based on game level.
      */
@@ -273,7 +302,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             if (projectileY < 0) isProjectileVisible = false;  // Hide projectile when it moves off-screen
         }
     }
-     /**
+    /**
      * method to activate the shield
      */
     private void activateShield() {

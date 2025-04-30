@@ -58,6 +58,11 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private BufferedImage[] catImages = new BufferedImage[3];  // Array to hold cat images
     private Clip[] meowingClips = new Clip[3];  // Array to hold meowing sound clips
 
+     // Shield variables for activating, starting and the duration of shield
+    private boolean shieldActive = false;
+    private int shieldDuration = 5000; // Shield lasts for 5 seconds
+    private long shieldStartTime;
+
     // Cat descriptions displayed on-screen to tell the user each cat's details
     private final String[] catDescriptions = {
             "Yoda: long haired with yellow and green eyes",
@@ -177,6 +182,11 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             g.setColor(Color.GREEN);
             g.fillRect(projectileX, projectileY, 5, 10);  // Draw the projectile
         }
+        //Draws the semi-transparent shield around the player
+        if (isShieldActive()) {
+            g.setColor(new Color(0, 255, 255, 100)); // Semi-transparent cyan
+            g.fillOval(playerX - 10, playerY - 10, PLAYER_WIDTH + 20, PLAYER_HEIGHT + 20); // Glow around the player
+        }
 
         // Display Game Over message if the game is over
         if (isGameOver) {
@@ -225,16 +235,22 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private void startObstacleMovement() {
         timer = new Timer(20, e -> {
             if (!isGameOver) {
-                moveObstacles();  // Move obstacles
-                moveProjectile();  // Move projectile
-                checkCollisions();  // Check for collisions
-                gamePanel.repaint();  // Repaint the game panel
+                moveObstacles();
+                moveProjectile();
+                checkCollisions();
+
+                // Auto-deactivate shield
+                if (shieldActive && (System.currentTimeMillis() - shieldStartTime) >= shieldDuration) {
+                    deactivateShield();
+                }
+
+                gamePanel.repaint();
             }
         });
         timer.start();  // Start the game loop
         createObstacles();  // Create initial obstacles
     }
-
+    
     /**
      * Moves obstacles across the screen based on game level.
      */
@@ -256,6 +272,25 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             projectileY -= PROJECTILE_SPEED;  // Move the projectile up
             if (projectileY < 0) isProjectileVisible = false;  // Hide projectile when it moves off-screen
         }
+    }
+     /**
+     * method to activate the shield
+     */
+    private void activateShield() {
+        shieldActive = true;
+        shieldStartTime = System.currentTimeMillis();
+    }
+    /**
+     * method to deactivate the shield
+     */
+    private void deactivateShield() {
+        shieldActive = false;
+    }
+    /**
+     * method to check whether the shield is active
+     */
+    private boolean isShieldActive() {
+        return shieldActive && (System.currentTimeMillis() - shieldStartTime) < shieldDuration;
     }
 
     /**
@@ -288,15 +323,21 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         // Check for player collisions with obstacles
         for (Rectangle obstacle : obstacles) {
             if (playerRect.intersects(obstacle)) {
-                health--;  // Decrease health if player collides with an obstacle
-                healthLabel.setText("Health: " + health);  // Update health label
-                resetPlayerPosition();  // Reset player position after collision
-                if (health <= 0) {  // Game over if health reaches 0
-                    isGameOver = true;
-                    timer.stop();  // Stop the game loop
+                if (isShieldActive()) {
+                    // Shield blocks the collision
+                    return;
+                } else {
+                    health--;
+                    healthLabel.setText("Health: " + health);
+                    resetPlayerPosition();
+                    if (health <= 0) {
+                        isGameOver = true;
+                        timer.stop();
+                    }
+                    return;
                 }
-                return;
             }
+
         }
 
         // Check for collisions between projectile and obstacles
@@ -340,6 +381,10 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         if (key == KeyEvent.VK_W && playerY > -10) playerY -= PLAYER_SPEED;  // Move up
         if (key == KeyEvent.VK_A && playerX > 0) playerX -= PLAYER_SPEED;  // Move left
         if (key == KeyEvent.VK_D && playerX + PLAYER_WIDTH < WIDTH) playerX += PLAYER_SPEED;  // Move right
+        if (key == KeyEvent.VK_S) {
+            activateShield();
+        }
+
 
         // Fire projectile if the spacebar is pressed
         if (key == KeyEvent.VK_SPACE && !isFiring) {

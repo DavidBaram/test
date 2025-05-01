@@ -32,7 +32,8 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private static final int WIDTH = 800, HEIGHT = 600;
     private static final int PLAYER_WIDTH = 40, PLAYER_HEIGHT = 40;
     private static final int OBSTACLE_WIDTH = 40, OBSTACLE_HEIGHT = 30;
-    private static final int PLAYER_SPEED = 10, PROJECTILE_SPEED = 10;
+    private static int PLAYER_SPEED = 10;
+    private static final int PROJECTILE_SPEED = 10;
 
     // Game state variables
     private int level = 1;  // Current game level
@@ -58,7 +59,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private BufferedImage[] catImages = new BufferedImage[3];  // Array to hold cat images
     private Clip[] meowingClips = new Clip[3];  // Array to hold meowing sound clips
 
-     // Shield variables for activating, starting and the duration of shield
+    // Shield variables for activating, starting and the duration of shield
     private boolean shieldActive = false;
     private int shieldDuration = 5000; // Shield lasts for 5 seconds
     private long shieldStartTime;
@@ -79,6 +80,64 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     // Timer for game loop
     private Timer timer;  // Timer to control the game loop and timing of movements
 
+    // Power-up position and visibility
+    private int powerUpX, powerUpY;
+    private boolean showHealthPowerUp = false;
+    private final int POWER_UP_SIZE = 30;
+
+    // Power-up timer
+    private long lastPowerUpSpawnTime = 0;
+    private final int POWER_UP_SPAWN_INTERVAL = 10000; // every 10 seconds
+
+    //Powerup image
+    private Image fishTreatImage;
+
+    //Speedboost powerup
+    private String powerUpType = "health"; // Default power-up type
+    private boolean speedBoostActive = false;
+    private int speedBoostDuration = 5000; // Speed boost lasts for 5 seconds
+    private long speedBoostStartTime;
+    private Timer speedBoostTimer; // Timer for speed boost
+    private Rectangle speedBoostPowerUp;
+    private boolean speedBoostVisible = true;
+    int boostDuration = 5000;
+    long boostStartTime = 0;
+
+   //
+    private int getCurrentSpeed() {
+        return speedBoostActive ? PLAYER_SPEED * 2 : PLAYER_SPEED;
+    }
+
+
+
+    // Activating speedboost
+    private void activateSpeedBoost() {
+        if (speedBoostActive) return; // Don't re-trigger if already active
+
+        speedBoostActive = true;
+
+        // Optional: log or display message
+        System.out.println("Speed boost activated!");
+
+        // Start 5-second timer
+        speedBoostTimer = new Timer(5000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                speedBoostActive = false;
+                System.out.println("Speed boost ended.");
+                speedBoostTimer.stop();
+            }
+        });
+        speedBoostTimer.setRepeats(false);
+        speedBoostTimer.start();
+    }
+
+
+    private boolean isSpeedBoostActive() {
+        return speedBoostActive && (System.currentTimeMillis() - speedBoostStartTime) < speedBoostDuration;
+    }
+
+
     /**
      * Constructor to set up the game window and initialize components.
      */
@@ -87,6 +146,8 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         setSize(WIDTH, HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
+        new ImageIcon("fish_treat2.png").getImage();
+
 
         loadCatImages();       // Load player sprites
         loadMeowingSounds();   // Load cat sound effects
@@ -95,11 +156,18 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         gamePanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
+                if (showHealthPowerUp && fishTreatImage != null) {
+                    g.drawImage(fishTreatImage, powerUpX, powerUpY, POWER_UP_SIZE, POWER_UP_SIZE, this);
+                }
                 super.paintComponent(g);
                 drawGame(g);  // Draw everything
+                if (showHealthPowerUp && fishTreatImage != null) {
+                    g.drawImage(fishTreatImage, powerUpX, powerUpY, POWER_UP_SIZE, POWER_UP_SIZE, this);
+                }
+
+
             }
         };
-
         gamePanel.setLayout(null);  // Set custom layout for the game panel
         add(gamePanel);
 
@@ -123,7 +191,9 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         gamePanel.setFocusable(true);
         gamePanel.addKeyListener(this);
 
-        startObstacleMovement(); // Begin game loop and spawn initial obstacles
+        startObstacleMovement();
+        // Begin game loop and spawn initial obstacles
+
     }
 
     /**
@@ -239,6 +309,48 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
                 moveProjectile();
                 checkCollisions();
 
+                Rectangle playerRect = new Rectangle(playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT);
+                Rectangle powerUpRect = new Rectangle(powerUpX, powerUpY, POWER_UP_SIZE, POWER_UP_SIZE);
+
+                // Check if player collects a power-up
+                if (playerRect.intersects(powerUpRect) && showHealthPowerUp) {
+                    if ("health".equals(powerUpType)) {
+                        health++;
+                        healthLabel.setText("Health: " + health);
+                    } else if ("speed".equals(powerUpType)) {
+                        speedBoostActive = true;
+                        speedBoostStartTime = System.currentTimeMillis();
+                        PLAYER_SPEED += 5; // Temporarily increase speed
+                    }
+                    showHealthPowerUp = false; // Hide power-up after collection
+
+                }
+                if (playerRect.intersects(powerUpRect) && showHealthPowerUp) {
+                    if ("health".equals(powerUpType)) {
+                        health++;
+                        healthLabel.setText("Health: " + health);
+                    } else if ("speed".equals(powerUpType)) {
+                        speedBoostActive = true;
+                        PLAYER_SPEED += 5; // Temporarily boost speed
+                    }
+                    showHealthPowerUp = false; // Remove power-up from screen
+                }
+                // Check if player collects speed boost power-up
+                if (speedBoostVisible && speedBoostPowerUp != null &&
+                        new Rectangle(playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT).intersects(speedBoostPowerUp)) {
+
+                    speedBoostVisible = false;
+                    activateSpeedBoost();
+                }
+
+
+// Check collision between player and power-up
+                if (playerRect.intersects(powerUpRect) && showHealthPowerUp) {
+                    health++;  // Increase player health
+                    healthLabel.setText("Health: " + health);
+                    showHealthPowerUp = false;  // Remove power-up from screen
+                }
+
                 // Auto-deactivate shield
                 if (shieldActive && (System.currentTimeMillis() - shieldStartTime) >= shieldDuration) {
                     deactivateShield();
@@ -250,7 +362,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         timer.start();  // Start the game loop
         createObstacles();  // Create initial obstacles
     }
-    
+
     /**
      * Moves obstacles across the screen based on game level.
      */
@@ -273,19 +385,22 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             if (projectileY < 0) isProjectileVisible = false;  // Hide projectile when it moves off-screen
         }
     }
-     /**
+
+    /**
      * method to activate the shield
      */
     private void activateShield() {
         shieldActive = true;
         shieldStartTime = System.currentTimeMillis();
     }
+
     /**
      * method to deactivate the shield
      */
     private void deactivateShield() {
         shieldActive = false;
     }
+
     /**
      * method to check whether the shield is active
      */
@@ -379,12 +494,12 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
         if (key == KeyEvent.VK_W && playerY > -10) playerY -= PLAYER_SPEED;  // Move up
-        if (key == KeyEvent.VK_A && playerX > 0) playerX -= PLAYER_SPEED;  // Move left
-        if (key == KeyEvent.VK_D && playerX + PLAYER_WIDTH < WIDTH) playerX += PLAYER_SPEED;  // Move right
+        if (key == KeyEvent.VK_A && playerX > 0) playerX -= PLAYER_SPEED;// Move left
+        if (key == KeyEvent.VK_D && playerX + PLAYER_WIDTH < WIDTH) playerX += PLAYER_SPEED;// Move right
         if (key == KeyEvent.VK_S) {
             activateShield();
-        }
 
+        }
 
         // Fire projectile if the spacebar is pressed
         if (key == KeyEvent.VK_SPACE && !isFiring) {
@@ -396,7 +511,8 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
                 try {
                     Thread.sleep(500);  // Prevent multiple firings
                     isFiring = false;  // Reset firing flag after half a second
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException ignored) {
+                }
             }).start();
         }
 
@@ -416,15 +532,39 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             meowingClips[catIndex].setFramePosition(0);  // Reset sound to start
             meowingClips[catIndex].start();  // Play the meow
         }
+
+
+        // Spawn health power-up every few seconds
+        if (!showHealthPowerUp && System.currentTimeMillis() - lastPowerUpSpawnTime > POWER_UP_SPAWN_INTERVAL) {
+            powerUpX = (int) (Math.random() * (WIDTH - POWER_UP_SIZE));
+            powerUpY = (int) (Math.random() * (HEIGHT - POWER_UP_SIZE));
+            showHealthPowerUp = true;
+            lastPowerUpSpawnTime = System.currentTimeMillis();
+            fishTreatImage = new ImageIcon("fish_treat2.png").getImage();
+        }
+        if (!showHealthPowerUp && System.currentTimeMillis() - lastPowerUpSpawnTime > POWER_UP_SPAWN_INTERVAL) {
+            powerUpX = (int) (Math.random() * (WIDTH - POWER_UP_SIZE));
+            powerUpY = (int) (Math.random() * (HEIGHT - POWER_UP_SIZE));
+
+            // Randomly choose a power-up type
+            powerUpType = (Math.random() > 0.5) ? "health" : "speed";
+
+            showHealthPowerUp = true;
+            lastPowerUpSpawnTime = System.currentTimeMillis();
+        }
     }
 
-    @Override public void keyReleased(KeyEvent e) {}  // Not used
-    @Override public void keyTyped(KeyEvent e) {}  // Not used
 
-    /**
-     * Main method to start the game.
-     */
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new CrosseyRoadFinalGame().setVisible(true));
+
+    @Override public void keyReleased (KeyEvent e){
+        }  // Not used
+        @Override public void keyTyped (KeyEvent e){
+        }  // Not used
+
+        /**
+         * Main method to start the game.
+         */
+        public static void main (String[]args){
+            SwingUtilities.invokeLater(() -> new CrosseyRoadFinalGame().setVisible(true));
+        }
     }
-}

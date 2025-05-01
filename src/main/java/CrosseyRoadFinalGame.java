@@ -58,6 +58,10 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private BufferedImage[] catImages = new BufferedImage[3];  // Array to hold cat images
     private Clip[] meowingClips = new Clip[3];  // Array to hold meowing sound clips
 
+    //ending image for when the player wins
+    private BufferedImage winImage;
+    private boolean hasWon = false;
+
     // Shield variables for activating, starting and the duration of shield
     private boolean shieldActive = false;
     private int shieldDuration = 5000; // Shield lasts for 5 seconds
@@ -93,6 +97,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
 
         loadCatImages();       // Load player sprites
         loadMeowingSounds();   // Load cat sound effects
+        loadWinImage();        //loads the win image
 
         // Set up the game panel with custom painting
         gamePanel = new JPanel() {
@@ -183,11 +188,48 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             ex.printStackTrace();
         }
     }
+    
+    /**
+     * Load the winner image after the player wins.
+     */
+    private void loadWinImage() {
+        try {
+            winImage = ImageIO.read(new File("winimage.png")); // Replace with your actual image file name
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * Main game rendering function that handles drawing all game components.
      */
     private void drawGame(Graphics g) {
+        //draws out the winning image if the player wins
+        if (hasWon) {
+            int imgWidth = 400;
+            int imgHeight = 300;
+            int x = WIDTH / 2 - imgWidth / 2;
+            int y = HEIGHT / 2 - imgHeight / 2;
+
+            // Draw the image first
+            if (winImage != null) {
+                g.drawImage(winImage, x, y, imgWidth, imgHeight, null);
+            }
+
+            // Then draw the "You Win!" text on top
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 48));
+            String winText = "You Win!";
+            FontMetrics fm = g.getFontMetrics();
+            int textWidth = fm.stringWidth(winText);
+            int textX = WIDTH / 2 - textWidth / 2;
+            int textY = y + imgHeight + 50;  // Position below the image
+
+            g.drawString(winText, textX, textY);
+
+            return;
+        }
+        
         if (level == 1) drawRoadLevel(g);  // Draw road level
         else if (level == 2) drawTrainLevel(g);  // Draw train level
         else if (level == 3) drawNeighborhoodLevel(g);  // Draw neighborhood level

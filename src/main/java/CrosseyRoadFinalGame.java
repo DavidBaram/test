@@ -425,13 +425,17 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             }
         }
 
-        // Check if player has reached the top of the screen and level up
+         // Check if player has reached the top of the screen and level up
         if (playerY < 0) {
             level++;  // Increase level
             if (level > 3) {
-                JOptionPane.showMessageDialog(this, "You Win!");  // Display win message
-                System.exit(0);  // End game
+                hasWon = true;
+                timer.stop();
+                countdownTimer.stop();  // Stop the countdown too
+                gamePanel.repaint();  // Trigger repaint so the win image shows
+                return;
             }
+
             resetPlayerPosition();  // Reset player position
             createObstacles();  // Create new obstacles for the next level
         }

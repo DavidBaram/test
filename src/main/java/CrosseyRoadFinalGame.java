@@ -57,6 +57,13 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     // Cat images and meowing sound clips
     private BufferedImage[] catImages = new BufferedImage[3];  // Array to hold cat images
     private Clip[] meowingClips = new Clip[3];  // Array to hold meowing sound clips
+    
+    //Car-crashing/collision clip
+    private Clip carCrashClip;
+    //Train clip for level 2
+    private Clip trainClip;
+    //Highway traffic clip for level 1
+    private Clip highwayTrafficClip;
 
     //ending image for when the player wins
     private BufferedImage winImage;
@@ -102,6 +109,9 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         loadMeowingSounds();   // Load cat sound effects
         loadWinImage();        //loads the win image
         loadBackgroundImages(); //Ensure background images are loaded
+        loadCrashSound();       //loads the car crash sound
+        loadTrainSound();       //loads train sound for level 2
+        loadHighwayTrafficSound(); //loads highway traffic sound for level 1
 
         // Set up the game panel with custom painting
         gamePanel = new JPanel() {
@@ -192,6 +202,42 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             ex.printStackTrace();
         }
     }
+    /**
+     * Load car crash sounds for collision with level 1.
+     */
+    private void loadCrashSound() {
+        try {
+            AudioInputStream crashStream = AudioSystem.getAudioInputStream(new File("carcrashing.wav").getAbsoluteFile());
+            carCrashClip = AudioSystem.getClip();
+            carCrashClip.open(crashStream);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    /**
+     * Load the train sound after the entering level 2 .
+     */
+    private void loadTrainSound() {
+        try {
+            AudioInputStream trainStream = AudioSystem.getAudioInputStream(new File("train.wav").getAbsoluteFile());
+            trainClip = AudioSystem.getClip();
+            trainClip.open(trainStream);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    /**
+     * Load the highway traffic sound after the entering level 1 .
+     */
+    private void loadHighwayTrafficSound() {
+        try {
+            AudioInputStream highwayStream = AudioSystem.getAudioInputStream(new File("highwaytraffic2.0.wav").getAbsoluteFile());
+            highwayTrafficClip = AudioSystem.getClip();
+            highwayTrafficClip.open(highwayStream);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * Load the winner image after the player wins.
@@ -230,7 +276,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             }
 
             // Then draw the "You Win!" text on top
-            g.setColor(Color.WHITE);
+            g.setColor(Color.BLACK);
             g.setFont(new Font("Arial", Font.BOLD, 48));
             String winText = "WELCOME HOME KITTY!";
             FontMetrics fm = g.getFontMetrics();
@@ -446,17 +492,34 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
      * Checks for collisions between player, obstacles, and projectiles.
      */
     private void checkCollisions() {
-        Rectangle playerRect = new Rectangle(playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT);  // Player's rectangle
+        Rectangle playerRect = new Rectangle(playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT);
+
+        // Play highway traffic sound during level 1
+        if (level == 1 && highwayTrafficClip != null && !highwayTrafficClip.isRunning()) {
+            highwayTrafficClip.setFramePosition(0);
+            highwayTrafficClip.loop(Clip.LOOP_CONTINUOUSLY);
+        }
+
+        // Stop highway traffic sound when moving to level 2 or beyond
+        if (level > 1 && highwayTrafficClip != null && highwayTrafficClip.isRunning()) {
+            highwayTrafficClip.stop();
+        }
 
         // Check for player collisions with obstacles
         for (Rectangle obstacle : obstacles) {
             if (playerRect.intersects(obstacle)) {
                 if (isShieldActive()) {
-                    // Shield blocks the collision
                     return;
                 } else {
                     health--;
                     healthLabel.setText("Health: " + health);
+
+                    // Play crash sound
+                    if (carCrashClip != null) {
+                        carCrashClip.setFramePosition(0);
+                        carCrashClip.start();
+                    }
+
                     resetPlayerPosition();
                     if (health <= 0) {
                         isGameOver = true;
@@ -465,36 +528,53 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
                     return;
                 }
             }
-
         }
 
-        // Check for collisions between projectile and obstacles
+        // Check for projectile hitting obstacles
         if (isProjectileVisible) {
-            Rectangle projectileRect = new Rectangle(projectileX, projectileY, 5, 10);  // Projectile's rectangle
+            Rectangle projectileRect = new Rectangle(projectileX, projectileY, 5, 10);
             for (int i = 0; i < obstacles.size(); i++) {
-                if (projectileRect.intersects(obstacles.get(i))) {  // Check if projectile hits obstacle
-                    obstacles.remove(i);  // Remove obstacle
-                    score += 10;  // Increase score
-                    scoreLabel.setText("Score: " + score);  // Update score label
-                    isProjectileVisible = false;  // Hide the projectile
+                if (projectileRect.intersects(obstacles.get(i))) {
+                    obstacles.remove(i);
+                    score += 10;
+                    scoreLabel.setText("Score: " + score);
+                    isProjectileVisible = false;
                     break;
                 }
             }
         }
 
-        // Check if player has reached the top of the screen and level up
+        // Check if player leveled up
         if (playerY < 0) {
-            level++;  // Increase level
+            level++;
+
+            // Stop highway traffic sound when leaving level 1
+            if (level == 2 && highwayTrafficClip != null) {
+                highwayTrafficClip.stop();
+            }
+
+            // Start train sound in level 2
+            if (level == 2 && trainClip != null) {
+                trainClip.setFramePosition(0);
+                trainClip.loop(Clip.LOOP_CONTINUOUSLY);
+            }
+
+            // Stop train sound in level 3
+            if (level == 3 && trainClip != null) {
+                trainClip.stop();
+            }
+
+            // Game win condition
             if (level > 3) {
                 hasWon = true;
                 timer.stop();
-                countdownTimer.stop();  // Stop the countdown too
-                gamePanel.repaint();  // Trigger repaint so the win image shows
+                countdownTimer.stop();
+                gamePanel.repaint();
                 return;
             }
 
-            resetPlayerPosition();  // Reset player position
-            createObstacles();  // Create new obstacles for the next level
+            resetPlayerPosition();
+            createObstacles();
         }
     }
 

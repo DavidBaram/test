@@ -182,7 +182,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
      */
     private void loadMeowingSounds() {
         try {
-            String[] meowFiles = {"Yoda.wav", "Alpha.wav", "Explorer.wav"};
+            String[] meowFiles = {"Yoda2.0.wav", "Alpha2.0.wav", "Explorer2.0.wav"};
             for (int i = 0; i < meowFiles.length; i++) {
                 AudioInputStream audioStream = AudioSystem.getAudioInputStream(new File(meowFiles[i]).getAbsoluteFile());
                 meowingClips[i] = AudioSystem.getClip();

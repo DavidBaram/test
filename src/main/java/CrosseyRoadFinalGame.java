@@ -58,7 +58,11 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private BufferedImage[] catImages = new BufferedImage[3];  // Array to hold cat images
     private Clip[] meowingClips = new Clip[3];  // Array to hold meowing sound clips
 
-     // Shield variables for activating, starting and the duration of shield
+    //ending image for when the player wins
+    private BufferedImage winImage;
+    private boolean hasWon = false;
+
+    // Shield variables for activating, starting and the duration of shield
     private boolean shieldActive = false;
     private int shieldDuration = 5000; // Shield lasts for 5 seconds
     private long shieldStartTime;
@@ -75,9 +79,15 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private JLabel scoreLabel;  // Score label
     private JLabel healthLabel;  // Health label
     private JLabel catDescriptionLabel;  // Label to show selected cat's description
+    private JLabel timerLabel;  // Timer label to show countdown
+    private int remainingTime = 60;  // 60-second countdown
+    private Timer countdownTimer;  // Timer for countdown
 
     // Timer for game loop
     private Timer timer;  // Timer to control the game loop and timing of movements
+
+    private BufferedImage roadBackground, trainBackground, neighborhoodBackground;
+
 
     /**
      * Constructor to set up the game window and initialize components.
@@ -90,6 +100,8 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
 
         loadCatImages();       // Load player sprites
         loadMeowingSounds();   // Load cat sound effects
+        loadWinImage();        //loads the win image
+        loadBackgroundImages(); //Ensure background images are loaded
 
         // Set up the game panel with custom painting
         gamePanel = new JPanel() {
@@ -105,25 +117,32 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
 
         // Add UI labels including score, health, and choosing character prompt.
         scoreLabel = new JLabel("Score: 0");
-        scoreLabel.setForeground(Color.BLACK);
+        scoreLabel.setForeground(Color.WHITE);
         scoreLabel.setBounds(10, 10, 100, 20);  // Position score label
         gamePanel.add(scoreLabel);
 
         healthLabel = new JLabel("Health: 3");
-        healthLabel.setForeground(Color.BLACK);
+        healthLabel.setForeground(Color.WHITE);
         healthLabel.setBounds(10, 40, 100, 20);  // Position health label
         gamePanel.add(healthLabel);
 
         catDescriptionLabel = new JLabel("Choose your cat! Press UP key");
-        catDescriptionLabel.setForeground(Color.BLACK);
+        catDescriptionLabel.setForeground(Color.WHITE);
         catDescriptionLabel.setBounds(10, 70, 400, 20);  // Position cat description label
         gamePanel.add(catDescriptionLabel);
+        timerLabel = new JLabel("Time: 60");
+        timerLabel.setForeground(Color.WHITE);
+        timerLabel.setBounds(10, 100, 100, 20);  // Position timer label
+        gamePanel.add(timerLabel);
+
 
         // Enable keyboard input
         gamePanel.setFocusable(true);
         gamePanel.addKeyListener(this);
 
         startObstacleMovement(); // Begin game loop and spawn initial obstacles
+        // Still inside the constructor, at the end, after startObstacleMovement();
+        startCountdownTimer();   // Begin countdown timer
     }
 
     /**
@@ -139,6 +158,25 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         }
     }
 
+    /**
+     * Load timer to countdown
+     */
+    private void startCountdownTimer() {
+        countdownTimer = new Timer(1000, e -> {
+            if (!isGameOver) {
+                remainingTime--;
+                timerLabel.setText("Time: " + remainingTime);
+                if (remainingTime <= 0) {
+                    isGameOver = true;
+                    timer.stop();
+                    countdownTimer.stop();
+                    gamePanel.repaint();
+                    JOptionPane.showMessageDialog(this, "Time's up!");
+                }
+            }
+        });
+        countdownTimer.start();
+    }
     /**
      * Load sound clips for each cat's meow.
      */
@@ -156,39 +194,88 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     }
 
     /**
+     * Load the winner image after the player wins.
+     */
+    private void loadWinImage() {
+        try {
+            winImage = ImageIO.read(new File("winimage.png")); // Replace with your actual image file name
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * Main game rendering function that handles drawing all game components.
      */
-    private void drawGame(Graphics g) {
-        if (level == 1) drawRoadLevel(g);  // Draw road level
-        else if (level == 2) drawTrainLevel(g);  // Draw train level
-        else if (level == 3) drawNeighborhoodLevel(g);  // Draw neighborhood level
+    private void loadBackgroundImages() {
+        try {
+            roadBackground = ImageIO.read(new File("road_background.jpg"));
+            trainBackground = ImageIO.read(new File("train_background.jpg"));
+            neighborhoodBackground = ImageIO.read(new File("neighborhood_background.jpg"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-        // Draw the selected cat at the player's position
+    private void drawGame(Graphics g) {
+        if (hasWon) {
+            int imgWidth = 400;
+            int imgHeight = 300;
+            int x = WIDTH / 2 - imgWidth / 2;
+            int y = HEIGHT / 2 - imgHeight / 2;
+
+
+            if (winImage != null) {
+                g.drawImage(winImage, x, y, imgWidth, imgHeight, null);
+            }
+
+            // Then draw the "You Win!" text on top
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 48));
+            String winText = "WELCOME HOME KITTY!";
+            FontMetrics fm = g.getFontMetrics();
+            int textWidth = fm.stringWidth(winText);
+            int textX = WIDTH / 2 - textWidth / 2;
+            int textY = y + imgHeight + 50;  // Position below the image
+
+            g.drawString(winText, textX, textY);
+
+            return;
+        }
+
+        if (level == 1) {
+            g.drawImage(roadBackground, 0, 0, WIDTH, HEIGHT, null);
+            drawRoadLevel(g);
+        } else if (level == 2) {
+            g.drawImage(trainBackground, 0, 0, WIDTH, HEIGHT, null);
+            drawTrainLevel(g);
+        } else if (level == 3) {
+            g.drawImage(neighborhoodBackground, 0, 0, WIDTH, HEIGHT, null);
+            drawNeighborhoodLevel(g);
+        }
+
         if (catImages[selectedCat] != null) {
             g.drawImage(catImages[selectedCat], playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT, null);
         } else {
-            g.setColor(Color.ORANGE);  // Default fallback color if no image is loaded
-            g.fillRect(playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT);  // Draw a rectangle
+            g.setColor(Color.ORANGE);
+            g.fillRect(playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT);
         }
 
-        // Draw all obstacles
         g.setColor(Color.RED);
         for (Rectangle obstacle : obstacles) {
             g.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
         }
 
-        // Draw the projectile if visible
         if (isProjectileVisible) {
             g.setColor(Color.GREEN);
-            g.fillRect(projectileX, projectileY, 5, 10);  // Draw the projectile
-        }
-        //Draws the semi-transparent shield around the player
-        if (isShieldActive()) {
-            g.setColor(new Color(0, 255, 255, 100)); // Semi-transparent cyan
-            g.fillOval(playerX - 10, playerY - 10, PLAYER_WIDTH + 20, PLAYER_HEIGHT + 20); // Glow around the player
+            g.fillRect(projectileX, projectileY, 5, 10);
         }
 
-        // Display Game Over message if the game is over
+        if (isShieldActive()) {
+            g.setColor(new Color(0, 255, 255, 100));
+            g.fillOval(playerX - 10, playerY - 10, PLAYER_WIDTH + 20, PLAYER_HEIGHT + 20);
+        }
+
         if (isGameOver) {
             g.setColor(Color.BLACK);
             g.setFont(new Font("Arial", Font.BOLD, 36));
@@ -196,39 +283,80 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         }
     }
 
-    /**
-     * Draw the road level background and obstacles.
-     */
     private void drawRoadLevel(Graphics g) {
-        gamePanel.setBackground(Color.GRAY);  // Set background color for road level
-        g.setColor(Color.WHITE);  // Set obstacle color
-        for (int i = 50; i < getWidth(); i += 60) {
-            g.fillRect(i, 200, 50, 10);  // Draw road obstacles
-            g.fillRect(i, 300, 50, 10);
-            g.fillRect(i, 400, 50, 10);
+        Graphics2D g2d = (Graphics2D) g.create();
+        int laneHeight = 60;
+        int laneCount = 7;
+        int startY = 120;
+
+        for (int i = 0; i < laneCount; i++) {
+            int y = startY + i * laneHeight;
+
+            // Translucent dark gray lane
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
+            g2d.setColor(Color.DARK_GRAY);
+            g2d.fillRect(0, y, getWidth(), laneHeight);
+
+            // Solid white dashed center lines
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+            g2d.setColor(Color.WHITE);
+            for (int x = 0; x < getWidth(); x += 40) {
+                g2d.fillRect(x, y + laneHeight / 2 - 2, 20, 4);
+            }
         }
+
+        g2d.dispose();
     }
 
-    /**
-     * Draw the train level background and obstacles.
-     */
     private void drawTrainLevel(Graphics g) {
-        gamePanel.setBackground(Color.LIGHT_GRAY);  // Set background color for train level
-        g.setColor(Color.DARK_GRAY);  // Set obstacle color
-        for (int i = 150; i < 600; i += 60) {
-            g.fillRect(0, i, getWidth(), 20);  // Draw train track obstacles
+        Graphics2D g2d = (Graphics2D) g.create();
+        int laneHeight = 60;
+        int laneCount = 7;
+        int startY = 120;
+
+        for (int i = 0; i < laneCount; i++) {
+            int y = startY + i * laneHeight;
+
+            // Translucent dark gray lane
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
+            g2d.setColor(Color.DARK_GRAY);
+            g2d.fillRect(0, y, getWidth(), laneHeight);
+
+            // Solid white dashed center lines
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+            g2d.setColor(Color.WHITE);
+            for (int x = 0; x < getWidth(); x += 40) {
+                g2d.fillRect(x, y + laneHeight / 2 - 2, 20, 4);
+            }
         }
+
+        g2d.dispose();
     }
 
-    /**
-     * Draw the neighborhood level background and obstacles.
-     */
     private void drawNeighborhoodLevel(Graphics g) {
-        gamePanel.setBackground(new Color(12, 196, 12));  // Set background color for neighborhood level
-        g.setColor(Color.YELLOW);  // Set obstacle color
-        g.fillRect(600, 50, 100, 100);  // Draw a neighborhood house
-    }
+        Graphics2D g2d = (Graphics2D) g.create();
+        int laneHeight = 60;
+        int laneCount = 7;
+        int startY = 120;
 
+        for (int i = 0; i < laneCount; i++) {
+            int y = startY + i * laneHeight;
+
+            // Translucent dark gray lane
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
+            g2d.setColor(Color.DARK_GRAY);
+            g2d.fillRect(0, y, getWidth(), laneHeight);
+
+            // Solid white dashed center lines
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+            g2d.setColor(Color.WHITE);
+            for (int x = 0; x < getWidth(); x += 40) {
+                g2d.fillRect(x, y + laneHeight / 2 - 2, 20, 4);
+            }
+        }
+
+        g2d.dispose();
+    }
     /**
      * Starts the timer for the game loop to handle movement and game state updates.
      */
@@ -250,7 +378,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         timer.start();  // Start the game loop
         createObstacles();  // Create initial obstacles
     }
-    
+
     /**
      * Moves obstacles across the screen based on game level.
      */
@@ -273,7 +401,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             if (projectileY < 0) isProjectileVisible = false;  // Hide projectile when it moves off-screen
         }
     }
-     /**
+    /**
      * method to activate the shield
      */
     private void activateShield() {
@@ -358,9 +486,13 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         if (playerY < 0) {
             level++;  // Increase level
             if (level > 3) {
-                JOptionPane.showMessageDialog(this, "You Win!");  // Display win message
-                System.exit(0);  // End game
+                hasWon = true;
+                timer.stop();
+                countdownTimer.stop();  // Stop the countdown too
+                gamePanel.repaint();  // Trigger repaint so the win image shows
+                return;
             }
+
             resetPlayerPosition();  // Reset player position
             createObstacles();  // Create new obstacles for the next level
         }

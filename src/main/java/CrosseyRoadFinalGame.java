@@ -319,27 +319,28 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
 
     private void drawGame(Graphics g) {
         if (hasWon) {
+            // Fill background with a visible color (e.g., light gray)
+            g.setColor(new Color(200, 200, 200)); // You can adjust RGB values
+            g.fillRect(0, 0, WIDTH, HEIGHT);
+
             int imgWidth = 400;
             int imgHeight = 300;
             int x = WIDTH / 2 - imgWidth / 2;
             int y = HEIGHT / 2 - imgHeight / 2;
 
-
             if (winImage != null) {
                 g.drawImage(winImage, x, y, imgWidth, imgHeight, null);
             }
 
-            // Then draw the "You Win!" text on top
             g.setColor(Color.BLACK);
             g.setFont(new Font("Arial", Font.BOLD, 48));
             String winText = "WELCOME HOME KITTY!";
             FontMetrics fm = g.getFontMetrics();
             int textWidth = fm.stringWidth(winText);
             int textX = WIDTH / 2 - textWidth / 2;
-            int textY = y + imgHeight + 50;  // Position below the image
+            int textY = y + imgHeight + 50;
 
             g.drawString(winText, textX, textY);
-
             return;
         }
 

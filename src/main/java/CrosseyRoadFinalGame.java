@@ -58,6 +58,12 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     // Cat images and meowing sound clips
     private BufferedImage[] catImages = new BufferedImage[3];  // Array to hold cat images
     private Clip[] meowingClips = new Clip[3];  // Array to hold meowing sound clips
+
+    //Constants for the level 3 ending house image
+    private static final int HOUSE_WIDTH = 200;
+    private static final int HOUSE_HEIGHT = 150;
+    private static final int HOUSE_X = WIDTH / 2 - HOUSE_WIDTH / 2;
+    private static final int HOUSE_Y = 10;
     
     //Car-crashing/collision clip
     private Clip carCrashClip;
@@ -95,6 +101,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private Timer timer;  // Timer to control the game loop and timing of movements
 
     private BufferedImage roadBackground, trainBackground, neighborhoodBackground;
+    private BufferedImage houseImage;
 
     // Powerups(health and speedboost)
     private BufferedImage healthPowerUpImage;
@@ -303,8 +310,10 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             roadBackground = ImageIO.read(new File("road_background.jpg"));
             trainBackground = ImageIO.read(new File("train_background.jpg"));
             neighborhoodBackground = ImageIO.read(new File("neighborhood_background.jpg"));
+            houseImage = ImageIO.read(new File("house.png")); // Add this line
         } catch (IOException e) {
             e.printStackTrace();
+            // Consider adding fallback behavior here
         }
     }
 
@@ -343,6 +352,10 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         } else if (level == 3) {
             g.drawImage(neighborhoodBackground, 0, 0, WIDTH, HEIGHT, null);
             drawNeighborhoodLevel(g);
+            // In the level 3 drawing section:
+            if (houseImage != null) {
+                g.drawImage(houseImage, HOUSE_X, HOUSE_Y, HOUSE_WIDTH, HOUSE_HEIGHT, null);
+            }
         }
 
         if (catImages[selectedCat] != null) {
@@ -426,24 +439,33 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
 
     private void drawNeighborhoodLevel(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
+
+        // Draw lanes (existing code)
         int laneHeight = 60;
         int laneCount = 7;
         int startY = 120;
 
         for (int i = 0; i < laneCount; i++) {
             int y = startY + i * laneHeight;
-
-            // Translucent dark gray lane
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
             g2d.setColor(Color.DARK_GRAY);
             g2d.fillRect(0, y, getWidth(), laneHeight);
 
-            // Solid white dashed center lines
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
             g2d.setColor(Color.WHITE);
             for (int x = 0; x < getWidth(); x += 40) {
                 g2d.fillRect(x, y + laneHeight / 2 - 2, 20, 4);
             }
+        }
+
+        // Draw the house at the top of the screen
+        if (houseImage != null) {
+            int houseWidth = 200;  // Adjust as needed
+            int houseHeight = 150; // Adjust as needed
+            int houseX = WIDTH / 2 - houseWidth / 2; // Center horizontally
+            int houseY = 10; // Position from top
+
+            g2d.drawImage(houseImage, houseX, houseY, houseWidth, houseHeight, null);
         }
 
         g2d.dispose();
@@ -538,7 +560,20 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
      */
     private void checkCollisions() {
         Rectangle playerRect = new Rectangle(playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT);
+// In checkCollisions(), near the level progression check:
+        // Replace the existing level 3 win condition with:
+        if (level == 3) {
+            Rectangle houseRect = new Rectangle(HOUSE_X, HOUSE_Y, HOUSE_WIDTH, HOUSE_HEIGHT);
+            playerRect = new Rectangle(playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT);
 
+            if (playerRect.intersects(houseRect)) {
+                hasWon = true;
+                timer.stop();
+                countdownTimer.stop();
+                gamePanel.repaint();
+                return;
+            }
+        }
         // Play highway traffic sound during level 1
         if (level == 1 && highwayTrafficClip != null && !highwayTrafficClip.isRunning()) {
             highwayTrafficClip.setFramePosition(0);
@@ -762,7 +797,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     // Loads speedboost image
     private void loadSpeedBoostImage() {
         try {
-            speedBoostImage = ImageIO.read(new File("fish_treat.png")); // Replace with actual image file name
+            speedBoostImage = ImageIO.read(new File("fish_treat.png")); // Fish treat image
         } catch (IOException e) {
             e.printStackTrace();
         }

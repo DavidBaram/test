@@ -101,9 +101,15 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private BufferedImage speedBoostImage;
     private List<PowerUp> powerUps = new ArrayList<>();
 
+    // Speedboost Powerup
     private int speedBoostTimeLeft = 5; // 5 seconds countdown
     private boolean showSpeedBoostTimer = false; // Tracks when to display timer
     private long speedBoostStartTime;
+
+    // Health regeneration message
+    private String healthMessage = ""; // Empty by default
+    private long healthMessageStartTime; // Time when message appears
+    private static final int HEALTH_MESSAGE_DURATION = 2000; // Show for 2 seconds
 
 
     /**
@@ -145,6 +151,16 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
                         g.setColor(Color.RED);
                         g.setFont(new Font("Arial", Font.BOLD, 20));
                         g.drawString("Speed Boost: " + speedBoostTimeLeft + "s", WIDTH - -100 , 20);
+                    }
+                    if (!healthMessage.isEmpty() && System.currentTimeMillis() - healthMessageStartTime < HEALTH_MESSAGE_DURATION) {
+                        g.setColor(Color.GREEN);
+                        g.setFont(new Font("Arial", Font.BOLD, 15));
+                        int messageX = (800 / 2) - 60; // Centered in window width
+                        int messageY = 50; // Positioned near the top
+                        g.drawString(healthMessage, messageX, messageY);
+
+                    } else {
+                        healthMessage = ""; // Clear message when time expires
                     }
 
                 }
@@ -545,7 +561,13 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
                         health = Math.min(health + 1, 3); // Ensure health doesn't exceed max
                         healthLabel.setText("Health: " + health);
 
-                    } else if (powerUps.get(i).type.equals("speed")) {
+                        // Show health message
+                        healthMessage = "Health Restored!";
+                        healthMessageStartTime = System.currentTimeMillis();
+
+
+
+                } else if (powerUps.get(i).type.equals("speed")) {
                         PLAYER_SPEED *= 2; // Double speed
                         showSpeedBoostTimer = true; // Ensure timer is visible
                         speedBoostTimeLeft = 5; // Start at 5 seconds
@@ -570,10 +592,6 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
                         });
                         countdownTimer.start(); // Start the countdown
                     }
-
-
-
-
                     powerUps.remove(i); // Remove collected power-up
                     break;
                 }

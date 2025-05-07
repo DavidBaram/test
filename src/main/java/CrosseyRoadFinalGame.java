@@ -448,13 +448,6 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
             g2d.setColor(Color.DARK_GRAY);
             g2d.fillRect(0, y, getWidth(), laneHeight);
-
-            // Solid white dashed center lines
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
-            g2d.setColor(Color.WHITE);
-            for (int x = 0; x < getWidth(); x += 40) {
-                g2d.fillRect(x, y + laneHeight / 2 - 2, 20, 4);
-            }
         }
 
         g2d.dispose();
@@ -484,13 +477,6 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
             g2d.setColor(Color.DARK_GRAY);
             g2d.fillRect(0, y, getWidth(), laneHeight);
-
-            // Solid white dashed center lines
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
-            g2d.setColor(Color.WHITE);
-            for (int x = 0; x < getWidth(); x += 40) {
-                g2d.fillRect(x, y + laneHeight / 2 - 2, 20, 4);
-            }
         }
         // Draw the house at the top of the screen
         if (houseImage != null) {

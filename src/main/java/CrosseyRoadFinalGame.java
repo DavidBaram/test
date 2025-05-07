@@ -30,7 +30,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
 
     // Constants for window and object dimensions
     private static final int WIDTH = 800, HEIGHT = 600;
-    private static final int PLAYER_WIDTH = 40, PLAYER_HEIGHT = 40;
+    private static final int PLAYER_WIDTH = 50, PLAYER_HEIGHT = 50;
     private static final int OBSTACLE_WIDTH = 40, OBSTACLE_HEIGHT = 30;
     private static int PLAYER_SPEED = 10;
     private static final int PROJECTILE_SPEED = 10;
@@ -38,7 +38,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     // Game state variables
     private int level = 1;  // Current game level
     private int health = 3;  // Player's health
-        private int score = 0;  // Player's score
+    private int score = 0;  // Player's score
     private boolean isGameOver = false;  // Flag to indicate if the game is over
     private boolean isProjectileVisible = false;  // Flag to indicate if the projectile is visible
     private boolean isFiring = false;  // Flag to prevent firing multiple projectiles at once
@@ -53,7 +53,8 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private Random rand = new Random();  // Random number generator for obstacle placement
 
     // Lists to manage dynamic game elements
-    private List<Rectangle> obstacles = new ArrayList<>();  // List to store obstacles
+    //private List<Rectangle> obstacles = new ArrayList<>();  // List to store obstacles
+    private List<Obstacle> obstacles = new ArrayList<>();
 
     // Cat images and meowing sound clips
     private BufferedImage[] catImages = new BufferedImage[3];  // Array to hold cat images
@@ -64,7 +65,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     private static final int HOUSE_HEIGHT = 150;
     private static final int HOUSE_X = WIDTH / 2 - HOUSE_WIDTH / 2;
     private static final int HOUSE_Y = 10;
-    
+
     //Car-crashing/collision clip
     private Clip carCrashClip;
     //Train clip for level 2
@@ -100,15 +101,17 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     // Timer for game loop
     private Timer timer;  // Timer to control the game loop and timing of movements
 
+    private BufferedImage highwaySpriteSheet, trainSpriteSheet, squirrelSpriteSheet;
+    private final int SPRITE_WIDTH = 64, SPRITE_HEIGHT = 64;
+
     private BufferedImage roadBackground, trainBackground, neighborhoodBackground;
     private BufferedImage houseImage;
-
     // Powerups(health and speedboost)
+
     private BufferedImage healthPowerUpImage;
     private BufferedImage speedBoostImage;
     private List<PowerUp> powerUps = new ArrayList<>();
 
-    // Speedboost Powerup
     private int speedBoostTimeLeft = 5; // 5 seconds countdown
     private boolean showSpeedBoostTimer = false; // Tracks when to display timer
     private long speedBoostStartTime;
@@ -137,6 +140,19 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         loadHighwayTrafficSound(); //loads highway traffic sound for level 1
         loadPowerUpImage();       // Loads health powerup image
         loadSpeedBoostImage();     // Loads speedboosts powerup image
+        loadLevelSprites();     // Loads obstacle sprite sheets
+    }
+
+
+    private void loadLevelSprites() {
+        try {
+            highwaySpriteSheet = ImageIO.read(new File("highway.png"));
+            trainSpriteSheet = ImageIO.read(new File("train.png"));
+            squirrelSpriteSheet = ImageIO.read(new File("backyard.png")); //loading spritesheet
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
         // Set up the game panel with custom painting
         gamePanel = new JPanel() {
@@ -212,9 +228,9 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
      */
     private void loadCatImages() {
         try {
-            catImages[0] = ImageIO.read(new File("cat1.png"));
-            catImages[1] = ImageIO.read(new File("cat2.png"));
-            catImages[2] = ImageIO.read(new File("cat3.png"));
+            catImages[0] = ImageIO.read(new File("yoda.png"));
+            catImages[1] = ImageIO.read(new File("alpha.png"));
+            catImages[2] = ImageIO.read(new File("explorer.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -307,13 +323,12 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
      */
     private void loadBackgroundImages() {
         try {
-            roadBackground = ImageIO.read(new File("road_background.jpg"));
-            trainBackground = ImageIO.read(new File("train_background.jpg"));
+            roadBackground = ImageIO.read(new File("highwayback.png"));
+            trainBackground = ImageIO.read(new File("traintracks.png"));
             neighborhoodBackground = ImageIO.read(new File("neighborhood_background.jpg"));
             houseImage = ImageIO.read(new File("house.png")); // Add this line
         } catch (IOException e) {
             e.printStackTrace();
-            // Consider adding fallback behavior here
         }
     }
 
@@ -328,19 +343,22 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             int x = WIDTH / 2 - imgWidth / 2;
             int y = HEIGHT / 2 - imgHeight / 2;
 
+
             if (winImage != null) {
                 g.drawImage(winImage, x, y, imgWidth, imgHeight, null);
             }
 
+            // Then draw the "You Win!" text on top
             g.setColor(Color.BLACK);
             g.setFont(new Font("Arial", Font.BOLD, 48));
             String winText = "WELCOME HOME KITTY!";
             FontMetrics fm = g.getFontMetrics();
             int textWidth = fm.stringWidth(winText);
             int textX = WIDTH / 2 - textWidth / 2;
-            int textY = y + imgHeight + 50;
+            int textY = y + imgHeight + 50;  // Position below the image
 
             g.drawString(winText, textX, textY);
+
             return;
         }
 
@@ -364,11 +382,6 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         } else {
             g.setColor(Color.ORANGE);
             g.fillRect(playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT);
-        }
-
-        g.setColor(Color.RED);
-        for (Rectangle obstacle : obstacles) {
-            g.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
         }
 
         if (isProjectileVisible) {
@@ -411,6 +424,15 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         }
 
         g2d.dispose();
+        if (highwaySpriteSheet != null) {
+            for (Obstacle obstacle : obstacles) {
+                int spriteX = obstacle.spriteIndex * SPRITE_WIDTH;
+                g.drawImage(highwaySpriteSheet.getSubimage(spriteX, 0, SPRITE_WIDTH, SPRITE_HEIGHT),
+                        obstacle.bounds.x, obstacle.bounds.y, (int)(OBSTACLE_WIDTH * 1.3), (int)(OBSTACLE_HEIGHT * 1.3), null);
+            }
+
+        }
+
     }
 
     private void drawTrainLevel(Graphics g) {
@@ -436,29 +458,40 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         }
 
         g2d.dispose();
+        if (trainSpriteSheet != null) {
+            for (Obstacle obstacle : obstacles) {
+                int spriteX = obstacle.spriteIndex * SPRITE_WIDTH;
+                g.drawImage(trainSpriteSheet.getSubimage(spriteX, 0, SPRITE_WIDTH, SPRITE_HEIGHT),
+                        obstacle.bounds.x, obstacle.bounds.y, (int)(OBSTACLE_WIDTH * 1.8), (int)(OBSTACLE_HEIGHT * 1.5), null);
+            }
+
+        }
+
     }
 
     private void drawNeighborhoodLevel(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
 
-        // Draw lanes (existing code)
+        //Draw lanes (existing code)
         int laneHeight = 60;
         int laneCount = 7;
         int startY = 120;
 
         for (int i = 0; i < laneCount; i++) {
             int y = startY + i * laneHeight;
+
+            // Translucent dark gray lane
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f));
             g2d.setColor(Color.DARK_GRAY);
             g2d.fillRect(0, y, getWidth(), laneHeight);
 
+            // Solid white dashed center lines
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
             g2d.setColor(Color.WHITE);
             for (int x = 0; x < getWidth(); x += 40) {
                 g2d.fillRect(x, y + laneHeight / 2 - 2, 20, 4);
             }
         }
-
         // Draw the house at the top of the screen
         if (houseImage != null) {
             int houseWidth = 200;  // Adjust as needed
@@ -470,6 +503,16 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         }
 
         g2d.dispose();
+        if (squirrelSpriteSheet != null) {
+            for (Obstacle obstacle : obstacles) {
+                int frame = obstacle.spriteIndex % 16;  // Make sure frame stays within 0–15
+                int frameX = (frame % 4) * SPRITE_WIDTH;  // 4 columns
+                int frameY = (frame / 4) * SPRITE_HEIGHT; // 4 rows
+
+                g.drawImage(squirrelSpriteSheet.getSubimage(frameX, frameY, SPRITE_WIDTH, SPRITE_HEIGHT),
+                        obstacle.bounds.x, obstacle.bounds.y, (int)(OBSTACLE_WIDTH * 1.3), (int)(OBSTACLE_HEIGHT * 1.3), null);
+            }
+        }
     }
     /**
      * Starts the timer for the game loop to handle movement and game state updates.
@@ -498,12 +541,13 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
      */
     private void moveObstacles() {
         int speed = (level == 2) ? 6 : 4;  // Set speed based on level
-        for (Rectangle obstacle : obstacles) {
-            obstacle.x += speed;  // Move each obstacle
-            if (obstacle.x > WIDTH) {  // Reset obstacle position if it moves off-screen
-                obstacle.x = -rand.nextInt(400);
+        for (Obstacle obstacle : obstacles) {
+            obstacle.bounds.x += speed;
+            if (obstacle.bounds.x > WIDTH) {
+                obstacle.bounds.x = -rand.nextInt(400);
             }
         }
+
     }
 
     /**
@@ -545,13 +589,20 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             for (int i = 0; i < 5; i++) {
                 int y = trackY[rand.nextInt(trackY.length)];  // Randomize obstacle Y position
                 int x = -rand.nextInt(WIDTH);  // Randomize obstacle X position
-                obstacles.add(new Rectangle(x, y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT));  // Add obstacle
+                Rectangle rect = new Rectangle(x, y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT);
+                int spriteIndex = rand.nextInt(4); // Fixed sprite per obstacle
+                obstacles.add(new Obstacle(rect, spriteIndex));
+                // Add obstacle
             }
-        } else {  // Other levels
+        } else { // Other levels
+            int[] laneCenters = {150, 210, 270, 330, 390, 450, 510};
             for (int i = 0; i < 15; i++) {
                 int x = rand.nextInt(WIDTH);  // Random X position
                 int y = 150 + rand.nextInt(300);  // Random Y position
-                obstacles.add(new Rectangle(x, y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT));  // Add obstacle
+                Rectangle rect = new Rectangle(x, y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT);
+                int spriteIndex = rand.nextInt(4); // Fixed sprite per obstacle
+                obstacles.add(new Obstacle(rect, spriteIndex));
+                // Add obstacle
             }
         }
     }
@@ -591,51 +642,50 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             Rectangle powerUpRect = new Rectangle(powerUps.get(i).x, powerUps.get(i).y, PowerUp.SIZE, PowerUp.SIZE);
 
 
-                if (playerRect.intersects(powerUpRect)) {
-                    // If player collects the health power-up, increase health
-                    if (powerUps.get(i).type.equals("health")) {
-                        health = Math.min(health + 1, 3); // Ensure health doesn't exceed max
-                        healthLabel.setText("Health: " + health);
+            if (playerRect.intersects(powerUpRect)) {
+                // If player collects the health power-up, increase health
+                if (powerUps.get(i).type.equals("health")) {
+                    health = Math.min(health + 1, 3); // Ensure health doesn't exceed max
+                    healthLabel.setText("Health: " + health);
 
-                        // Show health message
-                        healthMessage = "Health Restored!";
-                        healthMessageStartTime = System.currentTimeMillis();
-
+                    // Show health message
+                    healthMessage = "Health Restored!";
+                    healthMessageStartTime = System.currentTimeMillis();
 
 
                 } else if (powerUps.get(i).type.equals("speed")) {
-                        PLAYER_SPEED *= 2; // Double speed
-                        showSpeedBoostTimer = true; // Ensure timer is visible
-                        speedBoostTimeLeft = 5; // Start at 5 seconds
-                        speedBoostStartTime = System.currentTimeMillis(); // Track time
+                    PLAYER_SPEED *= 2; // Double speed
+                    showSpeedBoostTimer = true; // Ensure timer is visible
+                    speedBoostTimeLeft = 5; // Start at 5 seconds
+                    speedBoostStartTime = System.currentTimeMillis(); // Track time
 
-                        // Count down and repaint UI each second
-                        Timer countdownTimer = new Timer(1000, new ActionListener() {
-                            int countdown = 5;
-                            @Override
-                            public void actionPerformed(ActionEvent e) {
-                                speedBoostTimeLeft = countdown--;
-                                gamePanel.repaint(); // Ensure screen updates
+                    // Count down and repaint UI each second
+                    Timer countdownTimer = new Timer(1000, new ActionListener() {
+                        int countdown = 5;
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            speedBoostTimeLeft = countdown--;
+                            gamePanel.repaint(); // Ensure screen updates
 
-                                // Stop timer when it reaches 0
-                                if (countdown < 0) {
-                                    ((Timer) e.getSource()).stop(); // Stop countdown
-                                    PLAYER_SPEED /= 2; // Reset speed
-                                    showSpeedBoostTimer = false; // Hide timer
-                                    gamePanel.repaint(); // Final refresh
-                                }
+                            // Stop timer when it reaches 0
+                            if (countdown < 0) {
+                                ((Timer) e.getSource()).stop(); // Stop countdown
+                                PLAYER_SPEED /= 2; // Reset speed
+                                showSpeedBoostTimer = false; // Hide timer
+                                gamePanel.repaint(); // Final refresh
                             }
-                        });
-                        countdownTimer.start(); // Start the countdown
-                    }
-                    powerUps.remove(i); // Remove collected power-up
-                    break;
+                        }
+                    });
+                    countdownTimer.start(); // Start the countdown
                 }
+                powerUps.remove(i); // Remove collected power-up
+                break;
+            }
         }
 
         // Check for player collisions with obstacles
-        for (Rectangle obstacle : obstacles) {
-            if (playerRect.intersects(obstacle)) {
+        for (Obstacle obstacle : obstacles) {
+            if (playerRect.intersects(obstacle.bounds)) {
                 if (isShieldActive()) {
                     return;
                 } else {
@@ -662,7 +712,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         if (isProjectileVisible) {
             Rectangle projectileRect = new Rectangle(projectileX, projectileY, 5, 10);
             for (int i = 0; i < obstacles.size(); i++) {
-                if (projectileRect.intersects(obstacles.get(i))) {
+                if (projectileRect.intersects(obstacles.get(i).bounds)) {
                     obstacles.remove(i);
                     score += 10;
                     scoreLabel.setText("Score: " + score);
@@ -758,7 +808,16 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
             meowingClips[catIndex].start();  // Play the meow
         }
     }
+    // Obstacle class to hold position and sprite index
+    class Obstacle {
+        Rectangle bounds;
+        int spriteIndex;
 
+        public Obstacle(Rectangle bounds, int spriteIndex) {
+            this.bounds = bounds;
+            this.spriteIndex = spriteIndex;
+        }
+    }
     // Health Power up class
     class PowerUp {
         int x, y; // Position
@@ -798,7 +857,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
     // Loads speedboost image
     private void loadSpeedBoostImage() {
         try {
-            speedBoostImage = ImageIO.read(new File("fish_treat.png")); // Fish treat image
+            speedBoostImage = ImageIO.read(new File("fish_treat.png")); // Replace with actual image file name
         } catch (IOException e) {
             e.printStackTrace();
         }

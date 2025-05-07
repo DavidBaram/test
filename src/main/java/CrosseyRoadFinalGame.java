@@ -395,7 +395,7 @@ public class CrosseyRoadFinalGame extends JFrame implements KeyListener {
         }
 
         if (isGameOver) {
-            g.setColor(Color.BLACK);
+            g.setColor(Color.WHITE);
             g.setFont(new Font("Arial", Font.BOLD, 36));
             g.drawString("Game Over!", WIDTH / 2 - 100, HEIGHT / 2);
         }
